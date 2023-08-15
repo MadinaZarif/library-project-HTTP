@@ -7,7 +7,9 @@ import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import ru.itgirls.libraryproject.dto.AuthorCreateDto;
 import ru.itgirls.libraryproject.dto.AuthorDto;
+import ru.itgirls.libraryproject.dto.AuthorUpdateDto;
 import ru.itgirls.libraryproject.dto.BookDto;
 import ru.itgirls.libraryproject.model.Author;
 import ru.itgirls.libraryproject.repository.AuthorRepository;
@@ -49,18 +51,45 @@ public class AuthorServiceImpl implements AuthorService {
 
         Author author = authorRepository.findOne(specification).orElseThrow();
         return convertEntityToDto(author);
-
     }
 
+    @Override
+    public AuthorDto createAuthor(AuthorCreateDto authorCreateDto) {
+        Author author = authorRepository.save(convertDtoEntity(authorCreateDto));
+        AuthorDto authorDto = convertEntityToDto(author);
+        return authorDto;
+    }
+
+    @Override
+    public AuthorDto updateAuthor(AuthorUpdateDto authorUpdateDto) {
+        Author author = authorRepository.findById(authorUpdateDto.getId()).orElseThrow();
+        author.setName(authorUpdateDto.getName());
+        author.setSurname(authorUpdateDto.getSurname());
+
+        Author savedAuthor = authorRepository.save(author);
+        AuthorDto authorDto = convertEntityToDto(savedAuthor);
+        return authorDto;
+    }
+
+
+    private Author convertDtoEntity(AuthorCreateDto authorCreateDto) {
+        return Author.builder()
+                .name(authorCreateDto.getName())
+                .surname(authorCreateDto.getSurname())
+                .build();
+    }
     private AuthorDto convertEntityToDto(Author author) {
-        List<BookDto> bookDtoList = author.getBooks()
-                .stream()
-                .map(book -> BookDto.builder()
-                        .genre(book.getGenre().getName())
-                        .name(book.getName())
-                        .id(book.getId())
-                        .build())
-                .toList();
+        List<BookDto> bookDtoList = null;
+        if (author.getBooks() != null) {
+            bookDtoList = author.getBooks()
+                    .stream()
+                    .map(book -> BookDto.builder()
+                            .genre(book.getGenre().getName())
+                            .name(book.getName())
+                            .id(book.getId())
+                            .build())
+                    .toList();
+        }
 
         return AuthorDto.builder()
                 .books(bookDtoList)
@@ -70,5 +99,10 @@ public class AuthorServiceImpl implements AuthorService {
                 .build();
 
     }
+    @Override
+    public void deleteAuthor(Long id) {
+        authorRepository.deleteById(id);
+    }
+
 
 }
